@@ -1,0 +1,7 @@
+Samples	Stability	Total Mutations
+SBS96A	1.0	7
+SBS96B	1.0	7
+SBS96C	1.0	7
+SBS96D	1.0	7
+SBS96E	1.0	4
+SBS96F	1.0	4
