@@ -22,14 +22,14 @@ import pandas as pd
 import numpy as np
 import scipy.stats
 import sigProfilerPlotting as pltCNV
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import SigProfilerPlottingMatrix as sigPlt
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_SBS96 as spd_96
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import SigProfilerPlottingMatrix as sigPlt
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_SBS96 as spd_96
 # from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_SBS288 as spd_288
 # from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_SBS1536 as spd_1536
 # from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_DBS78 as spd_78
 # from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_ID83 as spd_83
 # from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition_CNV48 as cnv_48
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
 # imports for working with plots in memory
 import io
 from PIL import Image

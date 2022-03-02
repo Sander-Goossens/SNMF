@@ -10,7 +10,7 @@ Created on Thu Jul 16 16:01:59 2020
 import pandas as pd
 import numpy as np
 import os
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
 
 
 def estimate_solution(base_csvfile="All_solutions_stat.csv", 

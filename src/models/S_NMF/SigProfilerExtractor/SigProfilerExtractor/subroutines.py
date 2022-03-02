@@ -18,9 +18,9 @@ from multiprocessing import current_process
 from functools import partial
 from numpy import linalg as LA
 import sigProfilerPlotting as plot
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition as sp
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import plotActivity as plot_ac
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import tmbplot as tmb
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import PlotDecomposition as sp
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import plotActivity as plot_ac
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import tmbplot as tmb
 import string 
 import PyPDF2
 import os,sys
@@ -28,10 +28,10 @@ import scipy
 os.environ["MKL_NUM_THREADS"] = "1" 
 os.environ["NUMEXPR_NUM_THREADS"] = "1" 
 os.environ["OMP_NUM_THREADS"] = "1"
-import models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
+import src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
 from scipy.stats import  ranksums
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import single_sample as ss
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import nmf_cpu
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import single_sample as ss
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import nmf_cpu
 from sklearn import mixture
 from scipy.spatial.distance import cdist
 from scipy.spatial.distance import correlation as cor

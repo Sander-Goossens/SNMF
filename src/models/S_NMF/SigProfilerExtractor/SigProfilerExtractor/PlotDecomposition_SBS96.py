@@ -10,7 +10,7 @@ from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib import utils
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
-import models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
+import src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
 from PyPDF2 import PdfFileWriter, PdfFileReader, PdfFileMerger
 # imports for saving plots to memory
 import io

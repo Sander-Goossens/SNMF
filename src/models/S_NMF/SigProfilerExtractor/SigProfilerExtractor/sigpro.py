@@ -38,12 +38,12 @@ import psutil
 import copy
 import sigProfilerPlotting 
 import multiprocessing
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
 import SigProfilerMatrixGenerator
 from SigProfilerMatrixGenerator.scripts import SigProfilerMatrixGeneratorFunc as datadump   
 import multiprocessing as mp
-import models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
-from models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import single_sample as ss
+import src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import single_sample as ss
 from numpy.random import SeedSequence
 import pdb
 def memory_usage():
