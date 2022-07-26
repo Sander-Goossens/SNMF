@@ -41,6 +41,7 @@ from PyPDF2 import PdfFileMerger
 import warnings as _warnings
 _warnings.filterwarnings("ignore")
 from numpy.random import Generator, PCG64DXSM, SeedSequence
+import pickle as pkl
 
 try:
     import torch
@@ -256,7 +257,7 @@ def denormalize_samples(genomes, original_totals, normalization_value=30000):
     results = results.astype(int)
     return results  
 
-def nnmf_cpu(genomes, Y, nfactors, init="nndsvd", execution_parameters=None, generator=None):
+def nnmf_cpu(genomes, Y, lambda_c, lambda_p, lr, nfactors, init="nndsvd", execution_parameters=None, generator=None):
     Y = torch.from_numpy(Y).float()
     genomes = torch.from_numpy(genomes).float()
     min_iterations=execution_parameters["min_NMF_iterations"]
@@ -264,20 +265,24 @@ def nnmf_cpu(genomes, Y, nfactors, init="nndsvd", execution_parameters=None, gen
     tolerance=execution_parameters["NMF_tolerance"]
     test_conv=execution_parameters["NMF_test_conv"]
     precision=execution_parameters["precision"]
-    net = nmf_cpu.NMF(genomes, Y, rank=nfactors, min_iterations=min_iterations, max_iterations=max_iterations, tolerance=tolerance,test_conv=test_conv, init_method=init, generator=generator, floating_point_precision=precision)
+    net = nmf_cpu.NMF(genomes, Y, lambda_c = lambda_c, lambda_p = lambda_p, lr= lr, rank=nfactors, min_iterations=min_iterations, max_iterations=max_iterations, tolerance=tolerance,test_conv=test_conv, init_method=init, generator=generator, floating_point_precision=precision)
     net.fit()
     Ws = []
     Hs = []
+    Bs = []
     
     for H in net.H.detach().cpu().numpy():
         Hs.append(np.matrix(H))
     for W in net.W.detach().cpu().numpy():
         Ws.append(np.matrix(W))
+    for B in net.B.detach().cpu().numpy():
+        Bs.append(np.matrix(B))
     
     convergence = int(net.conv)
     
     W = Ws[0]
     H = Hs[0]
+    B = Bs[0]
     #calculate L1, L2 and KL for the solution 
     
     est_genome = np.array(np.dot(W, H))
@@ -285,7 +290,73 @@ def nnmf_cpu(genomes, Y, nfactors, init="nndsvd", execution_parameters=None, gen
     similarities = calculate_similarities(genomes, est_genome, sample_names=False)[0].iloc[:,2:]
     similarities = np.array(np.mean(similarities, axis=0)).T
     similarities = np.append(similarities, convergence)
-    return W, H, similarities
+
+    #TODO:
+    # learning curve data (losses):
+
+    # Non-negativity constraint magnitude:
+    neg_mag = net.neg_mag
+    learncurve = net.results
+
+    acc = net._acc.item()
+    f1 = net._f1
+    Lrec = net._fro_loss.item()
+    Lce = net._ce_loss.item()
+    Ltot = net._tot_loss.item()
+    epochs = net._conv
+
+    return W, H, B, similarities, neg_mag, learncurve, acc, f1, Lrec, Lce, Ltot, epochs
+
+
+def nnmf_cpu_refit(genomes, Y, W, lambda_c, lambda_p, lr, nfactors, init="nndsvd", execution_parameters=None, generator=None):
+    Y = torch.from_numpy(Y).float()
+    genomes = torch.from_numpy(genomes).float()
+    min_iterations = execution_parameters["min_NMF_iterations"]
+    max_iterations = execution_parameters["max_NMF_iterations"]
+    tolerance = execution_parameters["NMF_tolerance"]
+    test_conv = execution_parameters["NMF_test_conv"]
+    precision = execution_parameters["precision"]
+    net = nmf_cpu.NMF(genomes, Y, lambda_c=lambda_c, lambda_p=lambda_p, lr=lr, rank=nfactors,
+                      min_iterations=min_iterations, max_iterations=max_iterations, tolerance=tolerance,
+                      test_conv=test_conv, init_method=init, generator=generator, floating_point_precision=precision)
+    net.refit(W)
+
+    Hs = []
+    Bs = []
+
+    for H in net.H.detach().cpu().numpy():
+        Hs.append(np.matrix(H))
+    for B in net.B.detach().cpu().numpy():
+        Bs.append(np.matrix(B))
+
+    convergence = int(net.conv)
+
+    H = Hs[0]
+    B = Bs[0]
+    # calculate L1, L2 and KL for the solution
+
+
+    est_genome = np.array(np.dot(W, H))
+    genomes = np.array(genomes)
+    similarities = calculate_similarities(genomes, est_genome, sample_names=False)[0].iloc[:, 2:]
+    similarities = np.array(np.mean(similarities, axis=0)).T
+    similarities = np.append(similarities, convergence)
+
+    # TODO
+    # Learning curve data (losses)
+
+    # Non-negativity constraint magnitude:
+    neg_mag = net.neg_mag
+
+    acc = net._acc.item()
+    f1 = net._f1
+    Lrec = net._fro_loss.item()
+    Lce = net._ce_loss.item()
+    Ltot = net._tot_loss.item()
+    epochs = net._conv
+
+    return H, B, similarities, neg_mag, acc, f1, Lrec, Lce, Ltot, epochs
+
 
 # def nnmf_gpu(genomes, nfactors, init="nndsvd",execution_parameters=None, generator=None):
 #     p = current_process()
@@ -349,7 +420,7 @@ def BootstrapCancerGenomes(genomes, seed=None):
     return dataframe
 
 # NMF version for the multiprocessing library
-def pnmf(batch_generator_pair=[1,None], genomes=1, Y=0, totalProcesses=1, resample=True, init="nndsvd", normalization_cutoff=10000000, norm="log2", gpu=False, execution_parameters=None):
+def pnmf(batch_generator_pair=[1,None], genomes=1, Y=0, lambda_c= 1e-40, lambda_p= 0.5, lr=0.002, totalProcesses=1, resample=True, init="nndsvd", normalization_cutoff=10000000, norm="log2", gpu=False, execution_parameters=None):
     tic = time.time()
     totalMutations = np.sum(genomes, axis =0)
     genomes = pd.DataFrame(genomes) #creating/loading a dataframe/matrix
@@ -403,7 +474,7 @@ def pnmf(batch_generator_pair=[1,None], genomes=1, Y=0, totalProcesses=1, resamp
             bootstrapGenomes=genomes
 
         # bootstrapGenomes[bootstrapGenomes<0.0001]= 0.0001
-        bootstrapGenomes[bootstrapGenomes == 0.0] = 0.00000001
+        bootstrapGenomes[bootstrapGenomes == 0.0] = 1e-30
 
         # normalize the samples to handle the hypermutators
 
@@ -414,11 +485,13 @@ def pnmf(batch_generator_pair=[1,None], genomes=1, Y=0, totalProcesses=1, resamp
 
         bootstrapGenomes=np.array(bootstrapGenomes)
     #TODO: Get B from S-NMF
-        W, H, kl = nmf_fn(bootstrapGenomes, Y, totalProcesses, init=init, execution_parameters=execution_parameters, generator=rand_rng)  #uses custom function nnmf
+        W, H, B, kl, neg_mag, learningcurve, acc, f1, Lrec, Lce, Ltot, epochs = nmf_fn(bootstrapGenomes, Y, lambda_c, lambda_p, lr,\
+                                      totalProcesses, init=init, execution_parameters=execution_parameters, generator=rand_rng)  #uses custom function nnmf
 
 
         W = np.array(W)
         H = np.array(H)
+        B = np.array(B)
         total = W.sum(axis=0)[np.newaxis]
         W = W/total
         H = H*total.T
@@ -427,10 +500,10 @@ def pnmf(batch_generator_pair=[1,None], genomes=1, Y=0, totalProcesses=1, resamp
         # H = denormalize_samples(H, totalMutations)
         print ("process " +str(totalProcesses)+" continues please wait... ")
         print ("execution time: {} seconds \n".format(round(time.time()-tic), 2))
-        return W, H, kl
+        return W, H, B, kl, neg_mag, learningcurve, acc, f1, Lrec, Lce, Ltot, epochs
 
 
-def parallel_runs(execution_parameters, genomes=1, Y=0, totalProcesses=1, verbose = False, replicate_generators=None):
+def parallel_runs(execution_parameters, genomes=1, Y=0, lambda_c= 1e-40, lambda_p=0.5, lr= 0.001,   totalProcesses=1, verbose = False, replicate_generators=None):
     iterations = execution_parameters["NMF_replicates"]
     init=execution_parameters["NMF_init"]
     normalization_cutoff=execution_parameters["normalization_cutoff"]
@@ -482,8 +555,8 @@ def parallel_runs(execution_parameters, genomes=1, Y=0, totalProcesses=1, verbos
         # flat_list = [item for sublist in result_list for item in sublist]
 
     else:
-        pool_nmf=partial(pnmf, genomes=genomes, Y=Y, totalProcesses=totalProcesses, \
-                resample=resample, init=init, normalization_cutoff=normalization_cutoff, \
+        pool_nmf=partial(pnmf, genomes=genomes, Y=Y, lambda_c= lambda_c, lambda_p= lambda_p, lr= lr,\
+                totalProcesses=totalProcesses, resample=resample, init=init, normalization_cutoff=normalization_cutoff, \
                 norm=norm, gpu=gpu, execution_parameters=execution_parameters)
         result_list = pool.map(pool_nmf, batch_generator_pair)
         pool.close()
@@ -494,7 +567,7 @@ def parallel_runs(execution_parameters, genomes=1, Y=0, totalProcesses=1, verbos
 #################################### Decipher Signatures ###################################################
 
 
-def decipher_signatures(execution_parameters, genomes=[0], Y=0, i=1, totalIterations=1, cpu=-1, mut_context="96", noise_rep_pair=None):
+def decipher_signatures(execution_parameters, genomes=[0], Y=0, lambda_c= 1e-40, lambda_p= 0.5, lr=0.002, i=1, refit = False, W = 0, totalIterations=1, cpu=-1, mut_context="96", noise_rep_pair=None, path = None):
     #m = mut_context
     tic = time.time()
     # The initial values accumute the results for each number of 
@@ -539,8 +612,8 @@ def decipher_signatures(execution_parameters, genomes=[0], Y=0, i=1, totalIterat
         #
         #     results.append([W,H,similarities])
     else:
-        results = parallel_runs(execution_parameters, genomes=genomes, Y=Y, totalProcesses=totalProcesses, \
-            verbose = False, replicate_generators=replicate_generators)
+        results = parallel_runs(execution_parameters, genomes=genomes, Y=Y, lambda_c= lambda_c, lambda_p= lambda_p, lr= lr,\
+                                totalProcesses=totalProcesses, verbose = False, replicate_generators=replicate_generators)
     toc = time.time()
     print ("Time taken to collect {} iterations for {} signatures is {} seconds".format(totalIterations , totalProcesses, round(toc-tic, 2)))
     ##############################################################################################################################################################################       
@@ -548,11 +621,23 @@ def decipher_signatures(execution_parameters, genomes=[0], Y=0, i=1, totalIterat
     ##############################################################################################################################################################################        
     
     
-    ################### Achieve the best clustering by shuffling results list using a few iterations ##########        
+    ################### Achieve the best clustering by shuffling results list using a few iterations ##########
     Wall = np.zeros((totalMutationTypes, totalProcesses * totalIterations))
     Hall = np.zeros((totalProcesses * totalIterations, totalGenomes))
+    Ball = np.zeros((Y.shape[0], totalProcesses * totalIterations))
     converge_information = np.zeros((totalIterations, 7))
-    
+
+    neg_mag = {}
+    learningcurve = {}
+
+    np.zeros(shape=(len(results)))
+    acc = np.zeros(shape=(len(results)))
+    f1 = np.zeros(shape=(len(results)))
+    Lrec = np.zeros(shape=(len(results)))
+    Lce = np.zeros(shape=(len(results)))
+    Ltot = np.zeros(shape=(len(results)))
+    epochs =np.zeros(shape=(len(results)))
+
     finalgenomeErrors = np.zeros((totalMutationTypes, totalGenomes, totalIterations))
     finalgenomesReconstructed = np.zeros((totalMutationTypes, totalGenomes, totalIterations))
     
@@ -560,23 +645,94 @@ def decipher_signatures(execution_parameters, genomes=[0], Y=0, i=1, totalIterat
     for j in range(len(results)):
         W = results[j][0]
         H = results[j][1]
-        converge_information[j,:] = results[j][2][:]
+        B = results[j][2]
+        converge_information[j,:] = results[j][3][:]
         finalgenomeErrors[:, :, j] = genomes -  np.dot(W,H)
         finalgenomesReconstructed[:, :, j] = np.dot(W,H)
         Wall[ :, processCount : (processCount + totalProcesses) ] = W
         Hall[ processCount : (processCount + totalProcesses), : ] = H
+        Ball[:, processCount: (processCount + totalProcesses)] = B
         processCount = processCount + totalProcesses
-    
-    
-    processes=i #renamed the i as "processes"    
-    processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients = \
-        cluster_converge_outerloop(Wall, Hall, processes, dist=dist, gpu=gpu, cluster_rand_seq=cluster_rand_seq)
-    reconstruction_error = round(LA.norm(genomes-np.dot(processAvg, exposureAvg), 'fro')/LA.norm(genomes, 'fro'), 2)   
-    
 
+        neg_mag[j] = results[j][4]
+        learningcurve[j] = results[j][5]
+        acc[j] = results[j][6]
+        f1[j] = results[j][7]
+        Lrec[j] = results[j][8]
+        Lce[j] = results[j][9]
+        Ltot[j] = results[j][10]
+        epochs[j] = results[j][11]
+
+    min_loss = np.amin(Ltot)
+    print(Ltot)
+    print('Min Loss :', min_loss)
+    print('Max Loss :', np.amax(Ltot))
+    print('Threshold (20%) : ',1.20*min_loss)
+    print('ratio (max/min) :', np.amax(Ltot)/np.amin(Ltot))
+
+
+    processes = i  # renamed the i as "processes"
+
+    drop_20 = []
+    n = len(results)
+    x = 0
+    for j in range(n):
+        if Ltot[j] > 1.20*min_loss:
+            drop_20.append(range(j*totalProcesses, (j+1)*totalProcesses))
+            x += 1
+
+    print('{} out of {} Repeats where filtered out using 20% threshold'.format(x,n))
+    if x > 0:
+        filt = 2
+    else:
+        filt = 1
+
+    processAvg = [None]*(filt)
+    exposureAvg = [None]*(filt)
+    processSTE = [None]*(filt)
+    exposureSTE = [None]*(filt)
+    avgSilhouetteCoefficients = [None]*(filt)
+    clusterSilhouetteCoefficients = [None]*(filt)
+    Wall_label = [None]*(filt)
+    reconstruction_error = [None]*(filt)
+
+
+    Wall_filter_20 = np.delete(Wall, drop_20, axis=1)
+
+
+    processes=i #renamed the i as "processes"
+    processAvg[0], exposureAvg[0], processSTE[0],  exposureSTE[0], avgSilhouetteCoefficients[0], clusterSilhouetteCoefficients[0], Wall_label[0] = \
+        cluster_converge_outerloop(Wall, Hall, processes, dist=dist, gpu=gpu, cluster_rand_seq=cluster_rand_seq)
+    reconstruction_error[0] = round(LA.norm(genomes-np.dot(processAvg[0], exposureAvg[0]), 'fro')/LA.norm(genomes, 'fro'), 2)
+    print('Original :', reconstruction_error[0])
+    print('Original :', avgSilhouetteCoefficients[0])
+    print('Original :', clusterSilhouetteCoefficients[0])
+
+    if filt == 2:
+        processAvg[1], exposureAvg[1], processSTE[1],  exposureSTE[1], avgSilhouetteCoefficients[1], clusterSilhouetteCoefficients[1], Wall_label[1] = \
+        cluster_converge_outerloop(Wall_filter_20, Hall, processes, dist=dist, gpu=gpu, cluster_rand_seq=cluster_rand_seq)
+        reconstruction_error[1] = round(LA.norm(genomes-np.dot(processAvg[1], exposureAvg[1]), 'fro')/LA.norm(genomes, 'fro'), 2)
+        print('Filtered: ', reconstruction_error[1])
+        print('Filtered: ', avgSilhouetteCoefficients[1])
+        print('Filtered: ', clusterSilhouetteCoefficients[1])
+
+    #TODO: store Sigatures (10x5) + cluster labels (10x5) + silhoutte scores (10) + centroid signatures (5)
+    # Wall ; ... ; clustersilhouettecoeeficients ;  processAvg
+    # get labels and related to final
+
+    # outpath = path + '/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/'
+    outpath = path
+
+    np.save(outpath + '/Wall.txt', Wall)
+    np.save(outpath + '/Wall_label.txt', Wall_label[0])
+    np.save(outpath + '/cluster_stab.txt', clusterSilhouetteCoefficients[0])
+    np.save(outpath + '/Wavg.txt', processAvg[0])
+
+    # np.round(clusterSilhouetteCoefficients, 3)
     return  processAvg, exposureAvg, processSTE, exposureSTE, avgSilhouetteCoefficients, \
-            np.round(clusterSilhouetteCoefficients,3), finalgenomeErrors, finalgenomesReconstructed, \
-            Wall, Hall, converge_information, reconstruction_error, processes
+            clusterSilhouetteCoefficients, finalgenomeErrors, finalgenomesReconstructed, \
+            Wall, Hall, Ball, converge_information, reconstruction_error, processes, neg_mag, learningcurve, \
+            acc, f1, Lrec, Lce, Ltot, epochs, x
 
 
 
@@ -712,7 +868,8 @@ def reclustering(tempWall=0, tempHall=0, processAvg=0, exposureAvg=0, dist="cosi
     iterations = int(tempWall.shape[1]/processAvg.shape[1])
     processes =  processAvg.shape[1]
     idxIter = list(range(0, tempWall.shape[1], processes))
-   
+    Wall_label = np.zeros(tempWall.shape[1])
+
     processes3D = np.zeros([processAvg.shape[1], processAvg.shape[0], iterations])
     exposure3D = np.zeros([exposureAvg.shape[0], iterations, exposureAvg.shape[1]])
     
@@ -727,6 +884,7 @@ def reclustering(tempWall=0, tempHall=0, processAvg=0, exposureAvg=0, dist="cosi
             query_idx = cluster_items[1]
             processes3D[cluster_number,:,iteration_number]=tempWall[:,statidx+query_idx]
             exposure3D[cluster_number, iteration_number, :] = tempHall[statidx+query_idx,:]
+            Wall_label[statidx+query_idx] = cluster_number
 
     count = 0
     labels=[]
@@ -762,7 +920,7 @@ def reclustering(tempWall=0, tempHall=0, processAvg=0, exposureAvg=0, dist="cosi
     exposureSTE = scipy.stats.sem(exposure3D, axis=1, ddof=1)
     
         
-    return  processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients
+    return  processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, Wall_label
 
 def cluster_converge_innerloop(Wall, Hall, totalprocess, iteration_generator_pair, iteration=1, dist="cosine", gpu=False):
     
@@ -773,7 +931,7 @@ def cluster_converge_innerloop(Wall, Hall, totalprocess, iteration_generator_pai
     result = 0
     convergence_count = 0
     while True:
-        processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients = reclustering(Wall, Hall, processAvg, exposureAvg, dist=dist, gpu=gpu)
+        processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, Wall_label = reclustering(Wall, Hall, processAvg, exposureAvg, dist=dist, gpu=gpu)
         
         if result == avgSilhouetteCoefficients:
             break
@@ -783,7 +941,7 @@ def cluster_converge_innerloop(Wall, Hall, totalprocess, iteration_generator_pai
             result = avgSilhouetteCoefficients
             convergence_count = convergence_count + 1
         
-    return processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients
+    return processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, Wall_label
 
 
 
@@ -817,13 +975,13 @@ def cluster_converge_outerloop(Wall, Hall, totalprocess, dist="cosine", gpu=Fals
     
     for i in range(50):  # using 10 iterations to get the best clustering 
         
-        temp_processAvg, temp_exposureAvg, temp_processSTE,  temp_exposureSTE, temp_avgSilhouetteCoefficients, temp_clusterSilhouetteCoefficients = result_list[i][0], result_list[i][1], result_list[i][2], result_list[i][3], result_list[i][4], result_list[i][5]
+        temp_processAvg, temp_exposureAvg, temp_processSTE,  temp_exposureSTE, temp_avgSilhouetteCoefficients, temp_clusterSilhouetteCoefficients, temp_Wall_label = result_list[i][0], result_list[i][1], result_list[i][2], result_list[i][3], result_list[i][4], result_list[i][5], result_list[i][6]
         
         if avgSilhouetteCoefficients < temp_avgSilhouetteCoefficients:
-              processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients =   temp_processAvg, temp_exposureAvg, temp_processSTE,  temp_exposureSTE, temp_avgSilhouetteCoefficients, temp_clusterSilhouetteCoefficients
+              processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, Wall_label =   temp_processAvg, temp_exposureAvg, temp_processSTE,  temp_exposureSTE, temp_avgSilhouetteCoefficients, temp_clusterSilhouetteCoefficients, temp_Wall_label
         
       
-    return  processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients
+    return  processAvg, exposureAvg, processSTE,  exposureSTE, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, Wall_label
 
 ################################### Decompose the new signatures into global signatures   #########################
 def signature_decomposition(signatures, mtype, directory, genome_build="GRCh37", cosmic_version=3.2,signature_database=None, add_penalty=0.05, remove_penalty=0.01, mutation_context=None, connected_sigs=True, make_decomposition_plots=True, originalProcessAvg=None,new_signature_thresh_hold = 0.8):
@@ -1221,7 +1379,7 @@ def read_csv(filename, folder = False):
 
 
 ###################################################################################### Export Results ###########################################
-def export_information(loopResults, mutation_context, output, index, colnames, sequence="genome", wall=False):
+def export_information(loopResults, mutation_context, output, index, colnames, sequence="genome", wall=True, filter = False):
     
   
     
@@ -1231,6 +1389,10 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     #get Wall and Hall
     Wall = loopResults[-3]
     Hall = loopResults[-2]
+    Ball = loopResults[-4]
+
+    neg_mag = loopResults[-6]
+    B = loopResults[-7]
     
    
     
@@ -1246,7 +1408,14 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
         elif m== "INDEL":
             mutation_type = "ID83"
     # Create the neccessary directories
-    subdirectory = output+"/All_Solutions/"+mutation_type+"_"+str(i)+"_Signatures"
+    if filter == False:
+        subdirectory = output+"/All_Solutions/"+mutation_type+"_"+str(i)+"_Signatures"
+        all_sol = "/All_solutions_stat.csv"
+
+    else:
+        subdirectory = output+"/All_Solutions/"+mutation_type+"_"+str(i)+"_Signatures_filter"
+        all_sol = "/All_solutions_stat_filter.csv"
+
     signature_subdirectory=subdirectory+"/Signatures"
     activity_subdirectory=subdirectory+"/Activities"
     stats_subdirectory=subdirectory+"/Solution_Stats"
@@ -1285,7 +1454,12 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     #print(processes)
     #print("process are ok", processes)
     processes.to_csv(signature_subdirectory+"/"+mutation_type+"_S"+str(i)+"_Signatures"+".txt", "\t", index_label=[processes.columns.name]) 
-    
+
+    pd.DataFrame(B).to_csv(signature_subdirectory+"/"+mutation_type+"_S"+str(i)+"_S-NMF_weights.txt", "\t")
+    # np.savetxt(activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_S-NMF_weights.txt", B, delimiter="\t")
+    #TODO: save negmag
+
+
     #Second exporting the Average of the exposures
     exposureAvg = pd.DataFrame(exposureAvg)
     # exposureAvg = pd.DataFrame(exposureAvg.astype(int))
@@ -1296,7 +1470,9 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     exposures = exposures.rename_axis("Samples", axis="columns")
     #print("exposures are ok", exposures)
     exposures.to_csv(activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_NMF_Activities.txt", "\t", index_label=[exposures.columns.name]) 
-    
+
+
+
     #plt tmb
     tmb_exposures = pd.melt(exposures)
     # tmb.plotTMB(tmb_exposures, scale=sequence, Yrange="adapt", output= activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_"+"TMB_NMF_plot.pdf")
@@ -1304,7 +1480,8 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     
     #plot activities
     plot_ac.plotActivity(activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_NMF_Activities.txt", output_file = activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_"+"NMF_Activity_Plots.pdf", bin_size = 50, log = False)
-    
+    plot_ac.plotActivity_real(activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_NMF_Activities.txt", output_file = activity_subdirectory+"/"+mutation_type+"_S"+str(i)+"_"+"NMF_Activity_Plots_real.pdf", bin_size = 50, log = False)
+
     # get the standard errors of the processes
     processSTE = loopResults[3]      
     #export the processStd file
@@ -1342,14 +1519,34 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     converge_information.index = conv_index 
     converge_information.columns = colmetrices
     converge_information.to_csv(stats_subdirectory+"/"+mutation_type+"_S"+str(i)+"_"+"NMF_Convergence_Information.txt", "\t", index_label="NMF_Replicate")
-    
+
+    #export S-NMF info (B and neg_mag)
+
+
     # export Wall and Hall if "wall" argument is true
     if wall==True:
         
         np.savetxt(stats_subdirectory+"/"+mutation_type+"_S"+str(i)+"_Wall.txt", Wall, delimiter="\t")
         np.savetxt(stats_subdirectory+"/"+mutation_type+"_S"+str(i)+"_Hall.txt", Hall, delimiter="\t")
-    
-    fh = open(output+"/All_solutions_stat.csv", "a") 
+
+
+        np.savetxt(stats_subdirectory + "/" + mutation_type + "_S" + str(i) + "_Ball.txt", Ball, delimiter="\t")
+        # df = pd.DataFrame(data, )
+
+
+    # # First exporting the Average of the processes
+    # processAvg = pd.DataFrame(processAvg)
+    # processes = processAvg.set_index(index)
+    # processes.columns = listOfSignatures
+    # processes = processes.rename_axis("MutationType", axis="columns")
+    # # print(processes)
+    # # print("process are ok", processes)
+    # processes.to_csv(signature_subdirectory + "/" + mutation_type + "_S" + str(i) + "_Signatures" + ".txt", "\t",
+    #                  index_label=[processes.columns.name])
+
+
+
+    fh = open(output+ all_sol, "a")
     print ('The reconstruction error is {}, average process stability is {} and \nthe minimum process stability is {} for {} signatures\n\n'.format(reconstruction_error,  round(meanProcessStability,2), round(minProcessStability,2), i))
     fh.write('{}, {}, {}, {}\n'.format(i , round(minProcessStability, 2), round(reconstruction_error, 4), round(meanProcessStability,2)))
     fh.close()
@@ -1372,9 +1569,12 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
     elif m=="SV" or m=="32":
          plot.plotSV(signature_subdirectory+"/"+mutation_type+"_S"+str(i)+"_Signatures"+".txt", signature_subdirectory+"/Signature_plot"  , "S"+str(i), "pdf", percentage=True, aggregate=False)
     elif m=="96" or m=="288" or m=="384" or m=="1536":
+        #All solutions
         plot.plotSBS(signature_subdirectory+"/"+mutation_type+"_S"+str(i)+"_Signatures"+".txt", signature_subdirectory+"/Signature_plot", "S"+str(i), m, True, custom_text_upper=stability_list, custom_text_middle=total_mutation_list)
     else:
         custom_signatures_plot(processes, signature_subdirectory)
+
+    return reconstruction_error,  meanProcessStability, minProcessStability
         
 #############################################################################################################
 ######################################## MAKE THE FINAL FOLDER ##############################################
@@ -1382,7 +1582,7 @@ def export_information(loopResults, mutation_context, output, index, colnames, s
 def make_final_solution(processAvg, allgenomes, allsigids, layer_directory, m, index, allcolnames, process_std_error = "none", signature_stabilities = " ", \
                         signature_total_mutations= " ", signature_stats = "none",  cosmic_sigs=False, attribution= 0, denovo_exposureAvg  = "none", add_penalty=0.05, \
                         remove_penalty=0.01, initial_remove_penalty=0.05, de_novo_fit_penalty=0.02, background_sigs=0, genome_build="GRCh37", sequence="genome", export_probabilities=True, \
-                        refit_denovo_signatures=True, collapse_to_SBS96=True, connected_sigs=True, pcawg_rule=False, verbose=False):
+                        refit_denovo_signatures=True, collapse_to_SBS96=True, connected_sigs=True, pcawg_rule=False, verbose=False, weights = 0, neg_mag = 0, learningcurve = 0):
     
     # Get the type of solution from the last part of the layer_directory name
     solution_type = layer_directory.split("/")[-1]
@@ -1499,7 +1699,7 @@ def make_final_solution(processAvg, allgenomes, allsigids, layer_directory, m, i
                 lognote.write("L2 Error %: {}\nCosine Similarity: {}\n".format(round(newSimilarity,2), round(cos_sim(allgenomes[:,r], np.dot(processAvg, exposureAvg[:, r] )),2)))
                 #remove signatures 
                 exposureAvg[:,r],L2dist,cosine_sim = ss.remove_all_single_signatures(processAvg, exposureAvg[:, r], allgenomes[:,r], metric="l2", \
-                           solver = "nnls", cutoff=initial_remove_penalty, background_sigs= [], verbose=False)
+                           solver = "f", cutoff=initial_remove_penalty, background_sigs= [], verbose=False)
                 if verbose==True:
                     print("############################## Composition After Initial Remove ############################### ")
                     print(pd.DataFrame(exposureAvg[:, r],  index=allsigids).T)  
@@ -1587,8 +1787,16 @@ def make_final_solution(processAvg, allgenomes, allsigids, layer_directory, m, i
     processes = processAvg.set_index(index)
     processes.columns = allsigids
     processes = processes.rename_axis("MutationsType", axis="columns")
-    processes.to_csv(layer_directory+"/Signatures"+"/"+solution_prefix+"_"+"Signatures.txt", "\t", float_format='%.8f',index_label=[processes.columns.name]) 
-    exposureAvg = pd.DataFrame(exposureAvg.astype(int))
+    processes.to_csv(layer_directory+"/Signatures"+"/"+solution_prefix+"_"+"Signatures.txt", "\t", float_format='%.8f',index_label=[processes.columns.name])
+    pd.DataFrame(weights).to_csv(layer_directory + "/Signatures" + "/" + solution_prefix + "_" + "weights.txt", "\t")
+
+    a_file = open(layer_directory + "/Signatures" + "/" + solution_prefix + "_" + "neg_mag.pkl" , "wb")
+    pkl.dump(neg_mag,a_file)
+    # Learning Curve store
+    b_file = open(layer_directory + "/Signatures" + "/" + solution_prefix + "_" + "learning_curve.pkl", "wb")
+    pkl.dump(learningcurve, b_file)
+
+    exposureAvg = pd.DataFrame(exposureAvg.astype(float))
     allsigids = np.array(allsigids)
     exposures = exposureAvg.set_index(allsigids)
     exposures.columns = allcolnames
@@ -1597,9 +1805,10 @@ def make_final_solution(processAvg, allgenomes, allsigids, layer_directory, m, i
     if refit_denovo_signatures==True:
         exposures.to_csv(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities_refit.txt", "\t", index_label=[exposures.columns.name]) 
     else:
-        exposures.to_csv(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities.txt", "\t", index_label=[exposures.columns.name]) 
+        exposures.to_csv(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities.txt", "\t", index_label=[exposures.columns.name])
 
-    #plt tmb
+
+        #plt tmb
     tmb_exposures = pd.melt(exposures)
     # if refit_denovo_signatures==True:
     #     tmb.plotTMB(tmb_exposures, scale=sequence, Yrange="adapt", output= layer_directory+"/Activities"+"/"+solution_prefix+"_"+"TMB_plot_refit.pdf")
@@ -1610,9 +1819,12 @@ def make_final_solution(processAvg, allgenomes, allsigids, layer_directory, m, i
     #plot activities
     if refit_denovo_signatures==True:
         plot_ac.plotActivity(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities_refit.txt", output_file = layer_directory+"/Activities/"+solution_prefix+"_"+"Activity_Plots_refit.pdf", bin_size = 50, log = False)
+        plot_ac.plotActivity_real(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities_refit.txt", output_file = layer_directory+"/Activities/"+solution_prefix+"_"+"Activity_Plots_refit_real.pdf", bin_size = 50, log = False)
+
     else:
         plot_ac.plotActivity(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities.txt", output_file = layer_directory+"/Activities/"+solution_prefix+"_"+"Activity_Plots.pdf", bin_size = 50, log = False)
-    
+        plot_ac.plotActivity_real(layer_directory+"/Activities"+"/"+solution_prefix+"_"+"Activities.txt", output_file = layer_directory+"/Activities/"+solution_prefix+"_"+"Activity_Plots_real.pdf", bin_size = 50, log = False)
+
     # Calcutlate the similarity matrices
     est_genomes = np.dot(processAvg, exposureAvg)
     all_similarities, cosine_similarities = calculate_similarities(allgenomes, est_genomes, allcolnames)

@@ -441,7 +441,8 @@ def remove_all_single_signatures(W, H, genomes, metric="l2", solver = "nnls", cu
         if verbose==True:
             print("originalSimilarity", originalSimilarity)
     # make the original exposures of specific sample round
-    oldExposures = np.round(H)
+    # oldExposures = np.round(H)
+    oldExposures = H
     
     # set the flag for the while loop
     if len(oldExposures[np.nonzero(oldExposures)])>1:

@@ -44,7 +44,11 @@ from SigProfilerMatrixGenerator.scripts import SigProfilerMatrixGeneratorFunc as
 import multiprocessing as mp
 import src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor as cosmic
 from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import single_sample as ss
-from numpy.random import SeedSequence
+from numpy.random import Generator, PCG64DXSM, SeedSequence
+from sklearn import metrics
+from sklearn.metrics import f1_score
+import statistics
+
 import pdb
 def memory_usage():
     pid = os.getpid()
@@ -74,7 +78,7 @@ def importdata(datatype="matrix"):
 
     Example: 
     -------
-    >>> from SigProfilerExtractor import sigpro as sig
+    >>> from src.models.S_NMF.SigProfilerExtractor import sigpro as sig
     >>> data = sig.importdata("table")
     
     This "data" variable can be used as a parameter of the "project" argument of the sigProfilerExtractor function
@@ -174,7 +178,7 @@ def sigProfilerExtractor(input_type,
                          seeds= "random", 
                          min_nmf_iterations= 10000, 
                          max_nmf_iterations=1000000, 
-                         nmf_test_conv= 10000, 
+                         nmf_test_conv= 5000,
                          # nmf_tolerance= 1e-15,
                          # nnls_add_penalty=0.05,
                          # nnls_remove_penalty=0.01,
@@ -185,7 +189,8 @@ def sigProfilerExtractor(input_type,
                          nnls_remove_penalty=0.01,
                          de_novo_fit_penalty=0.0002,
                          initial_remove_penalty=0.0005,
-                         refit_denovo_signatures=True,
+                         # refit_denovo_signatures=True,
+                         refit_denovo_signatures=False,
                          collapse_to_SBS96=True,
                          clustering_distance="cosine",
                          export_probabilities=True,
@@ -193,7 +198,10 @@ def sigProfilerExtractor(input_type,
                          stability=0.8, 
                          min_stability=0.2, 
                          combined_stability=1.0,
-                         get_all_signature_matrices= False): 
+                         get_all_signature_matrices= False,
+                         lambda_c = 1e-40,
+                         lr = 0.001,
+                         lambda_p = 0.5):
     """
     Extracts mutational signatures from an array of samples.
     
@@ -306,7 +314,7 @@ def sigProfilerExtractor(input_type,
     Examples
     --------
 
-    >>> from SigProfilerExtractor import sigpro as sig
+    >>> from src.models.S_NMF.SigProfilerExtractor import sigpro as sig
     
     # to get input from vcf files
     >>> path_to_example_folder_containing_vcf_files = sig.importdata("vcf")
@@ -408,7 +416,10 @@ def sigProfilerExtractor(input_type,
                         "stability":stability, 
                         "min_stability":min_stability, 
                         "combined_stability":combined_stability,
-                        "get_all_signature_matrices":get_all_signature_matrices}
+                        "get_all_signature_matrices":get_all_signature_matrices,
+                        "Lambda_c":lambda_c,
+                        "lr":lr,
+                        "lambda_p":lambda_p}
                         
     ################################ take the inputs from the general optional arguments ####################################
     startProcess  = minimum_signatures
@@ -419,6 +430,7 @@ def sigProfilerExtractor(input_type,
     remove_penalty= nnls_remove_penalty
     genome_build  = opportunity_genome
     refgen        = reference_genome
+
 
     #set the squence type ("genome" or "exome") for the tmb plot inside the make_final_solution function
     if exome==False:
@@ -653,7 +665,7 @@ def sigProfilerExtractor(input_type,
         output = out_put+"/"+mutation_type
         est_genomes = np.zeros([1,1])
         genomes = np.array(genomes)
-        information =[] 
+
         layer_directory = output
         try:
             if not os.path.exists(layer_directory):
@@ -663,6 +675,10 @@ def sigProfilerExtractor(input_type,
         
         fh = open(layer_directory+"/All_solutions_stat.csv", "w")   
         fh.write("Total Signatures,Stability,Matrix Frobenius%,avgStability\n") 
+        fh.close()
+
+        fh = open(layer_directory+"/All_solutions_stat_filter.csv", "w")
+        fh.write("Total Signatures,Stability,Matrix Frobenius%,avgStability\n")
         fh.close()
         # The following for loop operates to extract data from each number of signature
         
@@ -720,6 +736,9 @@ def sigProfilerExtractor(input_type,
         for i, j, k in zip(poisson_list, replicate_generators, cluster_generators):
             noise_rep_pair.append([i,j,k])
 
+
+
+
         for num_sigs in range(startProcess,endProcess+1):
             current_time_start = datetime.datetime.now()
             processAvg, \
@@ -732,155 +751,306 @@ def sigProfilerExtractor(input_type,
             finalgenomesReconstructed, \
             finalWall, \
             finalHall, \
+            finalBall, \
             converge_information, \
             reconstruction_error, \
-            processes = sub.decipher_signatures(execution_parameters,
+            processes, \
+            neg_mag,    \
+            learningcurve, \
+            acc, \
+            f1, \
+            Lrec, \
+            Lce, \
+            Ltot, \
+            epochs, \
+            n_filter = sub.decipher_signatures(execution_parameters,
                                                 genomes= genomes,
                                                 Y= Y,
                                                 mut_context=m,
                                                 i = num_sigs,
-                                                noise_rep_pair=noise_rep_pair[num_sigs - startProcess])
-            
-#TODO: fix treshold lower
-            # remove signatures only if the process stability is above a thresh-hold of 0.85
-            if  avgSilhouetteCoefficients> -1.0:   
-                stic = time.time() 
-                pool = mp.Pool()
-                results = [pool.apply_async(ss.fit_signatures_pool, args=(genomes,processAvg,x,)) for x in range(genomes.shape[1])]
-                pooloutput = [p.get() for p in results]
-                pool.close()
-                                    
-                for i in range(len(pooloutput)):
-                    exposureAvg[:,i]=pooloutput[i][0] 
-                stoc = time.time()
-                print ("Optimization time is {} seconds".format(stoc-stic))    
-            #Get total mutationation for each signature in reverse order and order the signatures from high to low mutation barden
-            signature_total_mutations = np.sum(exposureAvg, axis =1).astype(int)
-            sorted_idx = np.argsort(-signature_total_mutations)
-            processAvg = np.take(processAvg, sorted_idx, axis=1)
-            exposureAvg = np.take(exposureAvg, sorted_idx, axis=0)
-            signature_total_mutations = np.sum(exposureAvg, axis =1).astype(int)
-            processStd=np.take(processStd, sorted_idx, axis=1)
-            exposureStd=np.take(exposureStd, sorted_idx, axis=0)
-            clusterSilhouetteCoefficients=np.take(clusterSilhouetteCoefficients, sorted_idx, axis=0)
-            signature_stats = pd.DataFrame({"Stability": clusterSilhouetteCoefficients, "Total Mutations": signature_total_mutations})
-            minimum_stabilities.append(round(np.mean(clusterSilhouetteCoefficients),2)) #here minimum stability is the average stability !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            # Compute the estimated genome from the processAvg and exposureAvg
-            est_genomes = np.dot(processAvg, exposureAvg) 
-            #check the similarities between the original and estimated genome for each number of signatures
-            all_similarities, cosine_similarities = sub.calculate_similarities(genomes, est_genomes, colnames)
-            ##########################################################################################################################################################################
-            # store the resutls of the loop.  Here,  processStd and exposureStd are standard Errors, NOT STANDARD DEVIATIONS.           
-            loopResults = [genomes, processAvg, exposureAvg, processStd, exposureStd, avgSilhouetteCoefficients, clusterSilhouetteCoefficients, signature_total_mutations, all_similarities, signature_stats, reconstruction_error, finalgenomeErrors, finalgenomesReconstructed, converge_information, finalWall, finalHall,  processes]    
-            information.append([processAvg, exposureAvg, processStd, exposureStd, clusterSilhouetteCoefficients, signature_total_mutations, signature_stats, all_similarities]) #Will be used during hierarchycal approach
-            
-            ################################# Export the results ###########################################################    
-            sub.export_information(loopResults, m, layer_directory, index, colnames, wall=wall, sequence=sequence)
-            all_similirities_list.append(all_similarities)
-            current_time_end = datetime.datetime.now()
+                                                lambda_c= lambda_c,
+                                                lambda_p= lambda_p,
+                                                lr= lr,
+                                                noise_rep_pair=noise_rep_pair[num_sigs - startProcess],
+                                                path = layer_directory)
+            filt = len(processAvg)
+            print(filt)
+            information = []
+
+            for idx in range(filt):
+                stic = time.time()
+
+                information.append([])
+                # TODO: fix treshold lower
+                # remove signatures only if the process stability is above a thresh-hold of 0.85
+                if avgSilhouetteCoefficients[idx] > -1.0:
+                    # stic = time.time()
+
+                    replicate_generators = noise_rep_pair[num_sigs-startProcess][:2]
+
+                    rep_generator = replicate_generators[1]
+
+                    # rep_generator = batch_generator_pair[1][1]
+                    rand_rng = Generator(PCG64DXSM(rep_generator))
+
+                    bootstrapGenomes = genomes
+                    # bootstrapGenomes[bootstrapGenomes<0.0001]= 0.0001
+                    bootstrapGenomes[bootstrapGenomes == 0.0] = 1e-30
+                    # normalize the samples to handle the hypermutators
+                    totalMutations = np.sum(bootstrapGenomes, axis=0)
+                    # print(normalization_cutoff)
+                    norm = 'log2'
+                    bootstrapGenomes = sub.normalize_samples(bootstrapGenomes, totalMutations, norm=norm,
+                                                         normalization_cutoff=normalization_cutoff)
+                    bootstrapGenomes = np.array(bootstrapGenomes)
+
+
+                    # REFIT
+                    H, B, kl, neg_mag_refit, acc_refit, f1_refit, Lrec_refit, Lce_refit, Ltot_refit, epochs_refit = sub.nnmf_cpu_refit(genomes, Y, processAvg[idx], lambda_c, lambda_p, lr,\
+                                      processAvg[idx].shape[1], execution_parameters=execution_parameters, generator=rand_rng)  #uses custom function nnmf
+
+
+                    exposureAvg[idx] = np.array(H)
+                    weightAvg = np.array(B)
+                    total = processAvg[idx].sum(axis=0)[np.newaxis]
+                    processAvg[idx] = processAvg[idx] / total
+                    exposureAvg[idx] = exposureAvg[idx] * total.T
+
+
+
+                    for i in range(exposureAvg[idx].shape[1]):
+                        genome = genomes[:, i]
+                        genome = np.array(genome)
+                        maxmutation = round(np.sum(genome))
+
+                        est_genome = np.dot(processAvg[idx], exposureAvg[idx][:,i])
+                        normalised_weights = exposureAvg[idx][:,i] / sum(exposureAvg[idx][:,i])
+                        solution = normalised_weights * sum(genome)
+                        # print(W1)
+                        # convert the newExposure vector into list type structure
+                        newExposure = list(solution)
+
+                        maxcoef = max(newExposure)
+                        idxmaxcoef = newExposure.index(maxcoef)
+                        # We may need to tweak the maximum value of the new exposure to keep the total number of mutation equal to the original mutations in a genome
+                        if np.sum(newExposure) != maxmutation:
+                            # newExposure[idxmaxcoef] = round(newExposure[idxmaxcoef])+maxmutation-sum(newExposure)
+                            newExposure[idxmaxcoef] = newExposure[idxmaxcoef] + maxmutation - sum(newExposure)
+                        exposureAvg[idx][:,i] = newExposure
+
+                    #TODO: Normalize?
+                    # H = H*total.T
+
+
+                    stoc = time.time()
+                    print("Optimization time is {} seconds".format(stoc - stic))
+
+
+
+### OLD: NNLS refit ###
+#             # remove signatures only if the process stability is above a thresh-hold of 0.85
+#             if  avgSilhouetteCoefficients> -1.0:
+#                 stic = time.time()
+#                 pool = mp.Pool()
+#                 results = [pool.apply_async(ss.fit_signatures_pool, args=(genomes,processAvg,x,)) for x in range(genomes.shape[1])]
+#                 pooloutput = [p.get() for p in results]
+#                 pool.close()
+#
+#                 #Use S-NMF with fixed signatures (W) optimize E and B
+#
+#                 for i in range(len(pooloutput)):
+#                     exposureAvg[:,i]=pooloutput[i][0]
+#                 stoc = time.time()
+#                 print ("Optimization time is {} seconds".format(stoc-stic))
+
+                #Get total mutationation for each signature in reverse order and order the signatures from high to low mutation barden
+                    signature_total_mutations = np.sum(exposureAvg[idx], axis =1).astype(int)
+                    sorted_idx = np.argsort(-signature_total_mutations)
+                    processAvg[idx] = np.take(processAvg[idx], sorted_idx, axis=1)
+                    exposureAvg[idx] = np.take(exposureAvg[idx], sorted_idx, axis=0)
+                    weightAvg = np.take(weightAvg, sorted_idx, axis = 1)
+                    signature_total_mutations = np.sum(exposureAvg[idx], axis =1).astype(int)
+                    processStd[idx]=np.take(processStd[idx], sorted_idx, axis=1)
+                    exposureStd[idx]=np.take(exposureStd[idx], sorted_idx, axis=0)
+                    clusterSilhouetteCoefficients[idx]=np.take(clusterSilhouetteCoefficients[idx], sorted_idx, axis=0)
+                    signature_stats = pd.DataFrame({"Stability": clusterSilhouetteCoefficients[idx], "Total Mutations": signature_total_mutations})
+                    minimum_stabilities.append([round(np.mean(clusterSilhouetteCoefficients[idx]),2)]) #here minimum stability is the average stability !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # Compute the estimated genome from the processAvg and exposureAvg
+                    est_genomes = np.dot(processAvg[idx], exposureAvg[idx])
+                    #check the similarities between the original and estimated genome for each number of signatures
+                    all_similarities, cosine_similarities = sub.calculate_similarities(genomes, est_genomes, colnames)
+                    ##########################################################################################################################################################################
+                    # store the resutls of the loop.  Here,  processStd and exposureStd are standard Errors, NOT STANDARD DEVIATIONS.
+                    loopResults = [genomes, processAvg[idx], exposureAvg[idx], processStd[idx], exposureStd[idx], avgSilhouetteCoefficients[idx], clusterSilhouetteCoefficients[idx], signature_total_mutations, all_similarities, signature_stats, reconstruction_error[idx], finalgenomeErrors, finalgenomesReconstructed, converge_information, learningcurve, weightAvg, neg_mag, finalBall, finalWall, finalHall,  processes]
+
+                    ################################# Export the results ###########################################################
+                    #TODO: do not export?! in CV
+                    if idx == 0:
+                        rec, stability_mean, stability_min = sub.export_information(loopResults, m, layer_directory, index, colnames, wall=wall, sequence=sequence)
+                    elif idx ==1:
+                        rec, stability_mean, stability_min = sub.export_information(loopResults, m, layer_directory, index, colnames, wall=wall, sequence=sequence, filter = True)
+
+
+                    all_similirities_list.append([all_similarities])
+                    current_time_end = datetime.datetime.now()
+
+                    information[idx].append([processAvg[idx], exposureAvg[idx], processStd[idx], exposureStd[idx], clusterSilhouetteCoefficients[idx],
+                                        signature_total_mutations, signature_stats, all_similarities, acc_refit, f1_refit,
+                                        Lrec_refit, Lce_refit, Ltot_refit, epochs_refit, rec, stability_mean,
+                                        stability_min, acc, f1, Lrec, Lce, Ltot, epochs, neg_mag, weightAvg, learningcurve])  # Will be used during hierarchycal approach
+
+
             sysdata = open(out_put+"/JOB_METADATA.txt", "a")
             sysdata.write("\n[{}] {} de novo extraction completed for a total of {} signatures! \nExecution time:{}\n". \
                           format(str(datetime.datetime.now()).split(".")[0],mutation_type,processes,str(current_time_end-current_time_start).split(".")[0], current_time_end))
             sysdata.close()
 
-        ########################################## Plot Stabiltity vs Reconstruction Error #############################        
-        # Print the Stabiltity vs Reconstruction Error as get the solution as well
-        solution, all_stats = sub.stabVsRError(layer_directory+"/All_solutions_stat.csv", layer_directory, title, all_similirities_list, mtype=mutation_type, stability=stability, min_stability=min_stability, combined_stability=combined_stability)
-        all_stats.insert(1, 'Stability (Avg Silhouette)', minimum_stabilities) #!!!!!!!!!!!!!!!!1 here minimum stability is avg stability
-        all_stats=all_stats.set_index(["Signatures"])
-        all_stats.to_csv(layer_directory+"/All_solutions_stat.csv", sep = ",")
+        #TODO: For loop original/filtered?
 
-        # write the name of Samples and Matrix participating in each Layer.
-        layer_genome = pd.DataFrame(genomes)
-        layer_genome = layer_genome.set_index(index)
-        layer_genome.columns = colnames
-        layer_genome = layer_genome.rename_axis("Mutation Types", axis="columns")
 
-        # record the samples
-        layer_genome.to_csv(output+"/Samples.txt", sep = "\t", index_label=[layer_genome.columns.name])
-        #similarity_dataframe.to_csv(data_stat_folder+"/Similatiry_Data_All_Sigs"+str(H_iteration)+".text", sep = "\t")
-        del layer_genome
-        ################################### Decompose the new signatures into global signatures   #########################
-        processAvg = information[solution-startProcess][0]
-        exposureAvg = information[solution-startProcess][1]
-        processSTE = information[solution-startProcess][2]
-        signature_stabilities = information[solution-startProcess][4]
-        signature_total_mutations = information[solution-startProcess][5]  
-        signature_stats = information[solution-startProcess][6] 
-        all_similarities = information[solution-startProcess][7]
-    
-        # create the folder for the final solution/ De Novo Solution
-        layer_directory1 = output+"/Suggested_Solution/"+mutation_type+"_De-Novo_Solution"
-        try:
-            if not os.path.exists(layer_directory1):
-                os.makedirs(layer_directory1)
-        except: 
-            print ("The {} folder could not be created".format("output"))
+        stability_min_2 = [None]*(2)
+        stability_mean_2 = [None]*(2)
+        rec_2 = [None]*(2)
 
-        # make the texts for signature plotting
-        signature_stabilities = sub.signature_plotting_text(signature_stabilities, "Stability", "float")
-        signature_total_mutations = sub.signature_plotting_text(signature_total_mutations, "Total Mutations", "integer")
-        listOfSignatures = sub.make_letter_ids(idlenth = processAvg.shape[1], mtype=mutation_context)
-        allgenomes = pd.DataFrame(allgenomes)
-     
-        exposureAvg = sub.make_final_solution(processAvg, allgenomes, listOfSignatures, layer_directory1, m, index, \
-                       allcolnames, process_std_error = processSTE, signature_stabilities = signature_stabilities, \
-                       signature_total_mutations = signature_total_mutations,denovo_exposureAvg  = exposureAvg, \
-                       signature_stats = signature_stats, add_penalty=add_penalty, remove_penalty=remove_penalty, \
-                       initial_remove_penalty=initial_remove_penalty, refit_denovo_signatures=refit_denovo_signatures, \
-                       de_novo_fit_penalty=de_novo_fit_penalty, sequence=sequence)    
+        epochs_refit_2 = [None]*(2)
+        Ltot_refit_2 = [None]*(2)
+        Lce_refit_2 = [None]*(2)
+        Lrec_refit_2 = [None]*(2)
+        f1_refit_2 = [None]*(2)
+        acc_refit_2 = [None]*(2)
 
-        layer_directory2 = output+"/Suggested_Solution/COSMIC_"+mutation_type+"_Decomposed_Solution"
-        try:
-            if not os.path.exists(layer_directory2):
-                os.makedirs(layer_directory2)
-        except: 
-            print ("The {} folder could not be created".format("output"))
+        for j in range(filt):
+            ########################################## Plot Stabiltity vs Reconstruction Error #############################
+            # Print the Stabiltity vs Reconstruction Error as get the solution as well
+            if j == 0:
+                all_sol = "/All_solutions_stat.csv"
+            elif j ==1:
+                all_sol = "/All_solutions_stat_filter.csv"
+            solution, all_stats = sub.stabVsRError(layer_directory+all_sol, layer_directory, title, all_similirities_list[j], mtype=mutation_type, stability=stability, min_stability=min_stability, combined_stability=combined_stability)
+            all_stats.insert(1, 'Stability (Avg Silhouette)', minimum_stabilities[j]) #!!!!!!!!!!!!!!!!1 here minimum stability is avg stability
+            all_stats=all_stats.set_index(["Signatures"])
+            all_stats.to_csv(layer_directory+all_sol, sep = ",")
+
+            # write the name of Samples and Matrix participating in each Layer.
+            layer_genome = pd.DataFrame(genomes)
+            layer_genome = layer_genome.set_index(index)
+            layer_genome.columns = colnames
+            layer_genome = layer_genome.rename_axis("Mutation Types", axis="columns")
+
+            # record the samples
+            layer_genome.to_csv(output+"/Samples.txt", sep = "\t", index_label=[layer_genome.columns.name])
+            #similarity_dataframe.to_csv(data_stat_folder+"/Similatiry_Data_All_Sigs"+str(H_iteration)+".text", sep = "\t")
+            del layer_genome
+            ################################### Decompose the new signatures into global signatures   #########################
+            processAvg = information[j][solution-startProcess][0]
+            exposureAvg = information[j][solution-startProcess][1]
+            processSTE = information[j][solution-startProcess][2]
+            signature_stabilities = information[j][solution-startProcess][4]
+            signature_total_mutations = information[j][solution-startProcess][5]
+            signature_stats = information[j][solution-startProcess][6]
+            all_similarities = information[j][solution-startProcess][7]
+
+            learningcurve_final = information[j][solution - startProcess][-1]
+            weightAvg = information[j][solution-startProcess][-2]
+            neg_mag_final = information[j][solution-startProcess][-3]
+            epochs = information[j][solution-startProcess][-4]
+            Ltot = information[j][solution-startProcess][-5]
+            Lce = information[j][solution-startProcess][-6]
+            Lrec = information[j][solution-startProcess][-7]
+            f1 = information[j][solution-startProcess][-8]
+            acc = information[j][solution-startProcess][-9]
+            stability_min_2[j] = information[j][solution-startProcess][-10]
+            stability_mean_2[j] = information[j][solution-startProcess][-11]
+            rec_2[j] = information[j][solution-startProcess][-12]
+
+            epochs_refit_2[j] = information[j][solution-startProcess][-13]
+            Ltot_refit_2[j] = information[j][solution-startProcess][-14]
+            Lce_refit_2[j] = information[j][solution-startProcess][-15]
+            Lrec_refit_2[j] = information[j][solution-startProcess][-16]
+            f1_refit_2[j] = information[j][solution-startProcess][-17]
+            acc_refit_2[j] = information[j][solution-startProcess][-18]
+
+
+            # create the folder for the final solution/ De Novo Solution
+            if j == 0:
+                layer_directory1 = output+"/Suggested_Solution/"+mutation_type+"_De-Novo_Solution"
+            elif j == 1:
+                layer_directory1 = output+"/Suggested_Solution/"+mutation_type+"_De-Novo_Solution_filter"
+
+            try:
+                if not os.path.exists(layer_directory1):
+                    os.makedirs(layer_directory1)
+            except:
+                print ("The {} folder could not be created".format("output"))
+
+            # make the texts for signature plotting
+            signature_stabilities = sub.signature_plotting_text(signature_stabilities, "Stability", "float")
+            signature_total_mutations = sub.signature_plotting_text(signature_total_mutations, "Total Mutations", "integer")
+            listOfSignatures = sub.make_letter_ids(idlenth = processAvg.shape[1], mtype=mutation_context)
+            allgenomes = pd.DataFrame(allgenomes)
+
+            #TODO: For original and filtered?
+            exposureAvg = sub.make_final_solution(processAvg, allgenomes, listOfSignatures, layer_directory1, m, index, \
+                           allcolnames, process_std_error = processSTE, signature_stabilities = signature_stabilities, \
+                           signature_total_mutations = signature_total_mutations,denovo_exposureAvg  = exposureAvg, \
+                           signature_stats = signature_stats, add_penalty=add_penalty, remove_penalty=remove_penalty, \
+                           initial_remove_penalty=initial_remove_penalty, refit_denovo_signatures=refit_denovo_signatures, \
+                           de_novo_fit_penalty=de_novo_fit_penalty, sequence=sequence, weights = weightAvg, neg_mag = neg_mag_final, learningcurve = learningcurve_final)
+
+            layer_directory2 = output+"/Suggested_Solution/COSMIC_"+mutation_type+"_Decomposed_Solution"
+            try:
+                if not os.path.exists(layer_directory2):
+                    os.makedirs(layer_directory2)
+            except:
+                print ("The {} folder could not be created".format("output"))
             
-        originalProcessAvg=pd.DataFrame(processAvg, index=index)
+        # originalProcessAvg=pd.DataFrame(processAvg, index=index)
         
-        if processAvg.shape[0]==1536 and collapse_to_SBS96==True: #collapse the 1596 context into 96 only for the deocmposition 
-            processAvg = pd.DataFrame(processAvg, index=index)
-            processAvg = processAvg.groupby(processAvg.index.str[1:8]).sum()
-            genomes = pd.DataFrame(genomes, index=index)
-            genomes = genomes.groupby(genomes.index.str[1:8]).sum()
-            index = genomes.index
-            processAvg = np.array(processAvg)
-            genomes = np.array(genomes)
-               
-        if processAvg.shape[0]==288 and collapse_to_SBS96==True: #collapse the 288 context into 96 only for the deocmposition 
-            processAvg = pd.DataFrame(processAvg, index=index)
-            processAvg = processAvg.groupby(processAvg.index.str[2:9]).sum()
-            genomes = pd.DataFrame(genomes, index=index)
-            genomes = genomes.groupby(genomes.index.str[2:9]).sum()
-            index = genomes.index
-            processAvg = np.array(processAvg)
-            genomes = np.array(genomes)
-        
-        originalProcessAvg.columns = listOfSignatures    
-        final_signatures = sub.signature_decomposition(processAvg, m, layer_directory2, genome_build=genome_build, cosmic_version=cosmic_version, add_penalty=0.05, remove_penalty=0.01, mutation_context=mutation_context, make_decomposition_plots=make_decomposition_plots, originalProcessAvg=originalProcessAvg)
-        
-        # extract the global signatures and new signatures from the final_signatures dictionary
-        globalsigs = final_signatures["globalsigs"]
-        globalsigs = np.array(globalsigs)
-        newsigs = final_signatures["newsigs"]
-        try:    
-            processAvg = np.hstack([globalsigs, newsigs])  
-            allsigids = final_signatures["globalsigids"]+final_signatures["newsigids"]
-        except: 
-            processAvg=newsigs
-            allsigids=final_signatures["newsigids"]
-            
-        attribution = final_signatures["dictionary"]
-        background_sigs= final_signatures["background_sigs"]
-        genomes = pd.DataFrame(genomes)
-        
-        exposureAvg = sub.make_final_solution(processAvg, genomes, allsigids, layer_directory2, m, index, colnames, \
-                                cosmic_sigs=True, attribution = attribution, denovo_exposureAvg  = exposureAvg , \
-                                background_sigs=background_sigs, add_penalty=add_penalty, remove_penalty=remove_penalty, \
-                                initial_remove_penalty=initial_remove_penalty, genome_build=genome_build, \
-                                collapse_to_SBS96=collapse_to_SBS96,sequence=sequence,export_probabilities=export_probabilities)
-        
+        # if processAvg.shape[0]==1536 and collapse_to_SBS96==True: #collapse the 1596 context into 96 only for the deocmposition
+        #     processAvg = pd.DataFrame(processAvg, index=index)
+        #     processAvg = processAvg.groupby(processAvg.index.str[1:8]).sum()
+        #     genomes = pd.DataFrame(genomes, index=index)
+        #     genomes = genomes.groupby(genomes.index.str[1:8]).sum()
+        #     index = genomes.index
+        #     processAvg = np.array(processAvg)
+        #     genomes = np.array(genomes)
+        #
+        # if processAvg.shape[0]==288 and collapse_to_SBS96==True: #collapse the 288 context into 96 only for the deocmposition
+        #     processAvg = pd.DataFrame(processAvg, index=index)
+        #     processAvg = processAvg.groupby(processAvg.index.str[2:9]).sum()
+        #     genomes = pd.DataFrame(genomes, index=index)
+        #     genomes = genomes.groupby(genomes.index.str[2:9]).sum()
+        #     index = genomes.index
+        #     processAvg = np.array(processAvg)
+        #     genomes = np.array(genomes)
+        #
+        # originalProcessAvg.columns = listOfSignatures
+
+        #TODO: Is this needed?
+        # final_signatures = sub.signature_decomposition(processAvg, m, layer_directory2, genome_build=genome_build, cosmic_version=cosmic_version, add_penalty=0.05, remove_penalty=0.01, mutation_context=mutation_context, make_decomposition_plots=make_decomposition_plots, originalProcessAvg=originalProcessAvg)
+        #
+        # # extract the global signatures and new signatures from the final_signatures dictionary
+        # globalsigs = final_signatures["globalsigs"]
+        # globalsigs = np.array(globalsigs)
+        # newsigs = final_signatures["newsigs"]
+        # try:
+        #     processAvg = np.hstack([globalsigs, newsigs])
+        #     allsigids = final_signatures["globalsigids"]+final_signatures["newsigids"]
+        # except:
+        #     processAvg=newsigs
+        #     allsigids=final_signatures["newsigids"]
+        #
+        # attribution = final_signatures["dictionary"]
+        # background_sigs= final_signatures["background_sigs"]
+        # genomes = pd.DataFrame(genomes)
+        #
+        # #Where is this used?
+        # exposureAvg = sub.make_final_solution(processAvg, genomes, allsigids, layer_directory2, m, index, colnames, \
+        #                         cosmic_sigs=True, attribution = attribution, denovo_exposureAvg  = exposureAvg , \
+        #                         background_sigs=background_sigs, add_penalty=add_penalty, remove_penalty=remove_penalty, \
+        #                         initial_remove_penalty=initial_remove_penalty, genome_build=genome_build, \
+        #                         collapse_to_SBS96=collapse_to_SBS96,sequence=sequence,export_probabilities=export_probabilities, weights =weightAvg)
+        #
     sysdata = open(out_put+"/JOB_METADATA.txt", "a")
     end_time = datetime.datetime.now()
     sysdata.write("\n[{}] Analysis ended: \n".format(str(end_time).split(".")[0]))
@@ -889,3 +1059,158 @@ def sigProfilerExtractor(input_type,
     sysdata.close()
 
     print("\n\n \nYour Job Is Successfully Completed! Thank You For Using SigProfiler Extractor.\n ")
+
+
+    #TODO: results for both --> Stability + refit 2x
+    return np.mean(acc), np.mean(f1), np.mean(Lrec), np.mean(Lce), np.mean(Ltot), np.mean(epochs), n_filter,    \
+           stability_mean_2[0], stability_min_2[0], rec_2[0], acc_refit_2[0], f1_refit_2[0], Lrec_refit_2[0], Lce_refit_2[0], Ltot_refit_2[0], epochs_refit_2[0],\
+           stability_mean_2[1], stability_min_2[1], rec_2[1], acc_refit_2[1], f1_refit_2[1], Lrec_refit_2[1], Lce_refit_2[1], Ltot_refit_2[1], epochs_refit_2[1]
+
+    # Acc_train ; F1_train ; Rec_train ; Lce ; Ltot ; Stability_avg ; Stability_min ; Epochs    Acc_refit ; F1_refit ; Rec_refit ; Epoch_refit ;
+
+
+
+
+import numpy as np
+import pandas as pd
+
+
+def test_sigProfilerExtractor(input_type,
+                         output,
+                         test_data,
+                         test_label,
+                         reference_genome="GRCh37",
+                         opportunity_genome = "GRCh37",
+                         cosmic_version=3.1,
+                         context_type = "default",
+                         exome = False,
+                         minimum_signatures=1,
+                         maximum_signatures=25,
+                         nmf_replicates=500,
+                         resample = False,
+                         batch_size=1,
+                         cpu=-1,
+                         gpu=False,
+                         nmf_init="random",
+                         precision= "single",
+                         matrix_normalization= "gmm",
+                         seeds= "random",
+                         min_nmf_iterations= 10000,
+                         max_nmf_iterations=1000000,
+                         nmf_test_conv= 10000,
+                         # nmf_tolerance= 1e-15,
+                         # nnls_add_penalty=0.05,
+                         # nnls_remove_penalty=0.01,
+                         # de_novo_fit_penalty=0.02,
+                         # initial_remove_penalty=0.05,
+                         nmf_tolerance=1e-18,
+                         nnls_add_penalty=0.05,
+                         nnls_remove_penalty=0.01,
+                         de_novo_fit_penalty=0.0002,
+                         initial_remove_penalty=0.0005,
+                         refit_denovo_signatures=True,
+                         collapse_to_SBS96=True,
+                         clustering_distance="cosine",
+                         export_probabilities=True,
+                         make_decomposition_plots=True,
+                         stability=0.8,
+                         min_stability=0.2,
+                         combined_stability=1.0,
+                         get_all_signature_matrices= False,
+                         lambda_c = 1e-40,
+                         lr = 0.001,
+                         lambda_p = 0.5,
+                         filter = False,
+                         model_path = ''):
+    #TODO:
+    # Load Test data + labels
+    # Load Signatures and Weights (W and B)
+    # Run NNLS --> Exposures
+    # Y_pred (1-hot) + metrics
+
+
+
+    data = pd.read_csv(test_data, sep="\t").iloc[:, :]
+    label = pd.read_csv(test_label, sep="\t").iloc[:, :]
+    data = data.dropna(axis=1, inplace=False)
+    data = data.loc[:, (data != 0).any(axis=0)]
+    X_test = data.iloc[:, 1:]
+    X_test = np.array(X_test)
+    allgenomes = X_test.copy()  # save the allgenomes for the final results
+    # Contruct the indeces of the matrix
+    # setting index and columns names of processAvg and exposureAvg
+    index = data.iloc[:, 0]
+    colnames = data.columns[1:]
+    allcolnames = colnames.copy()  # save the allcolnames for the final results
+
+    label = label.dropna(axis=1, inplace=False)
+    label = label.loc[:, (label != 0).any(axis=0)]
+    Y_test = label.iloc[:, 1:]
+    Y_test = np.array(Y_test)
+    classnames = label.columns[1:]
+
+    # n  Number of samples
+    n = X_test.shape[1]
+
+    if model_path != '':
+        model_path = model_path + '/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/'
+        signatures = pd.read_csv(model_path + 'SBS96_De-Novo_Signatures.txt', sep="\t").iloc[:, 1:]
+        # signatures
+        signatures = pd.read_csv( model_path + 'SBS96_De-Novo_Signatures.txt', sep="\t").iloc[:, 1:]
+        # classification weights
+        weights = pd.read_csv( model_path + 'SBS96_De-Novo_Weights.txt', sep="\t").iloc[:, 1:]
+        output_path = output
+
+    else:
+        if filter is False:
+            output_path = output + '/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/'
+        elif filter is True:
+            output_path = output+ '/SBS96/Suggested_Solution/SBS96_De-Novo_Solution_filter/Signatures/'
+        # signatures
+        signatures = pd.read_csv( output_path + 'SBS96_De-Novo_Signatures.txt', sep="\t").iloc[:, 1:]
+        # classification weights
+        weights = pd.read_csv( output_path + 'SBS96_De-Novo_Weights.txt', sep="\t").iloc[:, 1:]
+
+
+    # k  Number of signatures
+    k = signatures.shape[1]
+
+    exposureTest = np.zeros((k,n))
+
+    stic = time.time()
+    pool = mp.Pool()
+    results = [pool.apply_async(ss.fit_signatures_pool, args=(X_test,signatures,x,)) for x in range(n)]
+    pooloutput = [p.get() for p in results]
+    pool.close()
+
+    #Use S-NMF with fixed signatures (W) optimize E and B
+
+    for i in range(len(pooloutput)):
+        exposureTest[:,i]=pooloutput[i][0]
+    stoc = time.time()
+    print("Optimization time is {} seconds".format(stoc-stic))
+
+    np.save(output_path +'Y_test_N{}.txt'.format(n), Y_test)
+    #TODO: print/plot Exposures
+
+    Z = np.dot(weights, exposureTest)
+
+    e_x = np.exp(Z - np.max(Z))
+    Y_hat = e_x / np.sum(np.exp(Z- np.max(Z)), axis= 0)
+    Y_pred = np.argmax(Y_hat,axis=0)
+    Y_test = np.argmax(Y_test, axis=0)
+    acc = np.sum(Y_pred == Y_test)/Y_test.shape[0]
+    f1 = metrics.f1_score(Y_test, Y_pred, average='macro')
+    print(n)
+    print("accuracy = ", acc)
+    print(f1)
+    Y_pred_1h = np.zeros((Y_pred.size, Y_pred.max() + 1))
+    Y_pred_1h[np.arange(Y_pred.size), Y_pred] = 1
+    np.save(output_path + 'Y_pred_N{}.txt'.format(n), Y_pred_1h)
+
+
+    rec = np.linalg.norm(X_test - signatures @ exposureTest, ord='fro')
+    rec2 = np.linalg.norm(X_test - signatures @ exposureTest)
+    return acc , f1 , rec
+
+    pass

@@ -1,2 +1,0 @@
-NMF_Replicate	L1	L1 %	L2	L2 %	KL Divergence	Correlation	Convergence Iterations
-1	0.435	43.5	0.07	34.434	0.228	0.893	20000.0

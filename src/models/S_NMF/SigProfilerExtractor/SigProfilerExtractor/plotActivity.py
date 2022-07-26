@@ -99,12 +99,16 @@ artifacts_sigs = pd.DataFrame(np.array([['SBS27', '#C8C8C8'],
 ##########################################
 #function to plot Sample Activities
 def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False):
-    size = int(bin_size)
+
     inputDF = pd.read_table(activity_file,index_col = 0)
     inputDF = inputDF.loc[:, (inputDF != 0).any(axis = 0)]
     inputDF["sum"]=inputDF.sum(axis = 1)
     # inputDF.sort_values(by = "sum",inplace = True,ascending = False)
     inputDF.drop(columns = "sum",inplace = True)
+
+    bin_size = inputDF.shape[0]
+    size = int(bin_size)
+
     list_of_dfs = [inputDF.iloc[i:i+size,:] for i in range(0, len(inputDF),size)]
     all_sig = list(inputDF.columns.values)
     s1 = color_code[color_code['signature'].isin(all_sig)]["signature"].tolist()
@@ -125,6 +129,92 @@ def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_siz
 
 #Start plotting    
     pp = PdfPages(output_file)
+    for j in range(0,len(list_of_dfs)):
+        nsamples = len(list_of_dfs[j])
+        plot_length = nsamples/50*10
+        figure_length = plot_length + 5
+        Lmargin = 1.5/figure_length
+        names = list_of_dfs[j].index.values.tolist()
+        x_pos1 = list(map(lambda x : x + 0.2, list(range(0, len(names)))))
+        x_pos = list(range(0, len(names)))
+        barWidth=1
+        sig_activity_list=[]
+
+        for i in range(0,len(signature_list)):
+            sig_activity_list.append(list_of_dfs[j][signature_list[i]].tolist())
+        plot = plt.figure(figsize=(figure_length,7))
+        plt.rc('axes', edgecolor = 'lightgray')
+        #fig, ax = plt.subplots(figsize=(len(list_of_dfs[6])/50*16+2,6))
+        panel1 = plt.axes([Lmargin, 0.25, plot_length / figure_length , 0.6])
+        bottom_bars = []
+        plot_list = []
+        plt.xlim([-0.5, len(names)-0.5])
+        #ax.spines['right'].set_visible(False)
+        #ax.spines['top'].set_visible(False)
+        for i in range(0,len(signature_list)):
+            if i == 0:
+                plot_list.append(plt.bar(x_pos, sig_activity_list[i], color = color_list[i], edgecolor = 'white', width = barWidth))
+            elif i == 1:
+                bottom_bars = sig_activity_list[0]
+                plot_list.append(plt.bar(x_pos, sig_activity_list[i], bottom = bottom_bars, color = color_list[i], edgecolor = 'white', width = barWidth))
+            else:
+                bottom_bars = np.add(bottom_bars,sig_activity_list[i-1]).tolist()
+                plot_list.append(plt.bar(x_pos, sig_activity_list[i], bottom = bottom_bars, color = color_list[i], edgecolor = 'white', width = barWidth))
+        plt.xticks(x_pos, names, rotation = 90,ha = "right",rotation_mode="anchor")
+        plt.legend(plot_list, signature_list, fontsize="small", bbox_to_anchor=(1 + 0.5 / plot_length, 1), loc='upper left', borderaxespad=0.)
+        if log: 
+            plt.yscale('log')
+            print("WARNING: When log scale is applied to a stacked plot, the size of the bars are not proportional to the real value")
+            plt.ylabel("log10 of mutations in each signatrure")       
+        plt.ylabel("Number of mutations in each signatrure")
+        pp.savefig(plot) 
+        plt.close()
+    pp.close()
+
+
+def plotActivity_real(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False):
+
+    inputDF = pd.read_table(activity_file,index_col = 0)
+    inputDF = inputDF.loc[:, (inputDF != 0).any(axis = 0)]
+    inputDF["sum"]=inputDF.sum(axis = 1)
+    # inputDF.sort_values(by = "sum",inplace = True,ascending = False)
+    inputDF.drop(columns = "sum",inplace = True)
+
+    real = []
+    for idx, row in inputDF.iterrows():
+        if idx.split('_')[1][:4] == 'real':
+            real.append(idx)
+    inputDF = inputDF.loc[real]
+
+    bin_size = inputDF.shape[0]
+    size = int(bin_size)
+
+    list_of_dfs = [inputDF.iloc[i:i+size,:] for i in range(0, len(inputDF),size)]
+    all_sig = list(inputDF.columns.values)
+    s1 = color_code[color_code['signature'].isin(all_sig)]["signature"].tolist()
+    s3 = artifacts_sigs[artifacts_sigs['signature'].isin(all_sig)]["signature"].tolist()
+    a = [x for x in all_sig if x not in s1]
+    s2 = [x for x in a if x not in s3]
+    signature_list= s1 + s2 +s3
+    if len(s2) <= len(colors):
+        #print("Haha! we have defined all colors")
+        color_list = color_code[color_code['signature'].isin(all_sig)]["color"].tolist() + colors[:len(s2)] + artifacts_sigs[artifacts_sigs['signature'].isin(all_sig)]["color"].tolist()
+    else:
+        #print("Generating random colors...")
+        rand_colors_list=[]
+        for i in range(0, len(s2) - len(colors)):
+            rand_color = "#%06x" % random.randint(0, 0xFFFFFF)
+            rand_colors_list += [rand_color]
+        color_list = color_code[color_code['signature'].isin(all_sig)]["color"].tolist() + colors[:len(s2)] + rand_colors_list + artifacts_sigs[artifacts_sigs['signature'].isin(all_sig)]["color"].tolist()
+
+#Start plotting
+    pp = PdfPages(output_file)
+
+    #TODO: reorder
+    # list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96E", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96C", "SBS96F": "SBS96F", "SBS96G": "SBS96G"})
+    list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96C", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96E", "SBS96F": "SBS96G", "SBS96G": "SBS96F"})
+
+    # list_of_dfs[0] = list_of_dfs[0].reorder
     for j in range(0,len(list_of_dfs)):
         nsamples = len(list_of_dfs[j])
         plot_length = nsamples/50*10
@@ -157,11 +247,11 @@ def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_siz
                 plot_list.append(plt.bar(x_pos, sig_activity_list[i], bottom = bottom_bars, color = color_list[i], edgecolor = 'white', width = barWidth))
         plt.xticks(x_pos, names, rotation = 90,ha = "right",rotation_mode="anchor")
         plt.legend(plot_list, signature_list, fontsize="small", bbox_to_anchor=(1 + 0.5 / plot_length, 1), loc='upper left', borderaxespad=0.)
-        if log: 
+        if log:
             plt.yscale('log')
             print("WARNING: When log scale is applied to a stacked plot, the size of the bars are not proportional to the real value")
-            plt.ylabel("log10 of mutations in each signatrure")       
+            plt.ylabel("log10 of mutations in each signatrure")
         plt.ylabel("Number of mutations in each signatrure")
-        pp.savefig(plot) 
+        pp.savefig(plot)
         plt.close()
     pp.close()

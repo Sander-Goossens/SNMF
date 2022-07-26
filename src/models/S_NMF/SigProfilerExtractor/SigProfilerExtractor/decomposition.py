@@ -9,7 +9,7 @@ Created on Sun May 19 12:21:06 2019
 from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import subroutines as sub
 import numpy as np
 import pandas as pd
-import SigProfilerExtractor as cosmic
+import src.models.S_NMF.SigProfilerExtractor as cosmic
 import os
 
 
