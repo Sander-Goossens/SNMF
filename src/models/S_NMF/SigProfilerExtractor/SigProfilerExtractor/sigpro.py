@@ -49,6 +49,9 @@ from sklearn import metrics
 from sklearn.metrics import f1_score
 import statistics
 
+from src.models.S_NMF.SigProfilerExtractor.SigProfilerExtractor import plotActivity as plot_ac
+
+
 import pdb
 def memory_usage():
     pid = os.getpid()
@@ -1121,7 +1124,9 @@ def test_sigProfilerExtractor(input_type,
                          lr = 0.001,
                          lambda_p = 0.5,
                          filter = False,
-                         model_path = ''):
+                         model_path = '',
+                         cancer = '_',
+                         cosmic = '_'):
     #TODO:
     # Load Test data + labels
     # Load Signatures and Weights (W and B)
@@ -1176,6 +1181,7 @@ def test_sigProfilerExtractor(input_type,
     k = signatures.shape[1]
 
     exposureTest = np.zeros((k,n))
+    similarityTest = np.zeros((1,n))
 
     stic = time.time()
     pool = mp.Pool()
@@ -1187,10 +1193,12 @@ def test_sigProfilerExtractor(input_type,
 
     for i in range(len(pooloutput)):
         exposureTest[:,i]=pooloutput[i][0]
+        similarityTest[:,i]=pooloutput[i][1]
     stoc = time.time()
     print("Optimization time is {} seconds".format(stoc-stic))
 
-    np.save(output_path +'Y_test_N{}.txt'.format(n), Y_test)
+    #TODO: Uncomment
+    # np.save(output_path +'Y_test_N{}.txt'.format(n), Y_test)
     #TODO: print/plot Exposures
 
     Z = np.dot(weights, exposureTest)
@@ -1199,18 +1207,85 @@ def test_sigProfilerExtractor(input_type,
     Y_hat = e_x / np.sum(np.exp(Z- np.max(Z)), axis= 0)
     Y_pred = np.argmax(Y_hat,axis=0)
     Y_test = np.argmax(Y_test, axis=0)
-    acc = np.sum(Y_pred == Y_test)/Y_test.shape[0]
-    f1 = metrics.f1_score(Y_test, Y_pred, average='macro')
-    print(n)
-    print("accuracy = ", acc)
-    print(f1)
-    Y_pred_1h = np.zeros((Y_pred.size, Y_pred.max() + 1))
-    Y_pred_1h[np.arange(Y_pred.size), Y_pred] = 1
-    np.save(output_path + 'Y_pred_N{}.txt'.format(n), Y_pred_1h)
+
+    #TODO: Store Exposures
+        # exposures.to_csv(layer_directory + "/Activities" + "/" + solution_prefix + "_" + "Activities.txt", "\t",
+    #                  index_label=[exposures.columns.name])
+    # plot_ac.plotActivity_real(layer_directory + "/Activities" + "/" + solution_prefix + "_" + "Activities.txt",
+    #                           output_file=layer_directory + "/Activities/" + solution_prefix + "_" + "Activity_Plots_real.pdf",
+    #                           bin_size=50, log=False)
+
+    # ExposureTest --> dataframe rows = samples, columns = signatures
+    # rows: data.columns
+    # columns: signatures.columns
 
 
-    rec = np.linalg.norm(X_test - signatures @ exposureTest, ord='fro')
-    rec2 = np.linalg.norm(X_test - signatures @ exposureTest)
-    return acc , f1 , rec
+    exposures = pd.DataFrame(exposureTest.T, index = data.columns[1:] , columns = signatures.columns)
+    similarities = pd.DataFrame(similarityTest.T, index = data.columns[1:] , columns = ['similarity'])
+
+    if lambda_c == 0:
+        exposures = exposures.rename(columns={"SBS96A": "SBS96E",
+                                              "SBS96B": "SBS96A",
+                                              "SBS96C": "SBS96B",
+                                              "SBS96D": "SBS96D",
+                                              "SBS96E": "SBS96C"})
+
+    exposures = exposures.rename(columns={"SBS96A": "SBS96A_HR",
+                                          "SBS96B": "SBS96B_Control",
+                                          "SBS96C": "SBS96C_MMR",
+                                          "SBS96D": "SBS96D_BER_UNG",
+                                          "SBS96E": "SBS96E_BER_OGG1"})
+
+    exposures = exposures[['SBS96A_HR','SBS96B_Control','SBS96C_MMR','SBS96D_BER_UNG','SBS96E_BER_OGG1']]
+
+
+
+    exposures.to_csv(output_path + '/Exposures_test.txt', "\t", index_label=[exposures.columns.name])
+    similarities.to_csv(output_path + '/Similarities_test.txt', "\t", index_label=[similarities.columns.name])
+
+    # plot_ac.plotActivity_real(output_path + '/Exposures_test.txt',
+    #                           output_file= output_path + 'SBS96_Exposures_test.pdf', bin_size=50, log=False)
+
+    plot_ac.plotActivity(output_path + '/Exposures_test.txt',
+                              output_file= output_path + 'SBS96_Exposures_test.pdf', bin_size=50, log=False, lambda_c=lambda_c)
+    # plot_ac.plotActivity_real(output_path + '/Exposures_test.txt',
+    #                           output_file= output_path + 'SBS96_Exposures_test_real.pdf', bin_size=50, log=False, lambda_c=lambda_c)
+
+
+    # exposureAvg = pd.DataFrame(exposureAvg.astype(float))
+    # allsigids = np.array(allsigids)
+    # exposures = exposureAvg.set_index(allsigids)
+    # exposures.columns = allcolnames
+    # exposures = exposures.T
+    # exposures = exposures.rename_axis("Samples", axis="columns")
+
+
+
+    # Store Yhat
+    np.save(output_path + 'Y_hat_N{}.txt'.format(n), Y_hat)
+    Yhat_df = pd.DataFrame(data= Y_hat, columns= allcolnames, index = ['Control', 'MMR','HR', 'BER'])
+    if lambda_c ==0:
+        # Yhat_df.to_csv('C:/Users/sande/PycharmProjects/MEP_data/SSNMF/results/{}/Yhat_NMF_{}.text'.format(cancer, cosmic), sep = '\t')
+        Yhat_df.to_csv('C:/Users/sande/PycharmProjects/MEP_data/SSNMF/results/{}/Yhat_NMF.text'.format(cancer, cosmic), sep = '\t')
+    else:
+        # Yhat_df.to_csv('C:/Users/sande/PycharmProjects/MEP_data/SSNMF/results/{}/Yhat_SNMF_{}.text'.format(cancer, cosmic), sep = '\t')
+        Yhat_df.to_csv('C:/Users/sande/PycharmProjects/MEP_data/SSNMF/results/{}/Yhat_SNMF.text'.format(cancer), sep = '\t')
+
+
+    #TODO: ACCURACY only for Cell-line data
+
+    # acc = np.sum(Y_pred == Y_test)/Y_test.shape[0]
+    # f1 = metrics.f1_score(Y_test, Y_pred, average='macro')
+    # print(n)
+    # print("accuracy = ", acc)
+    # print(f1)
+    # Y_pred_1h = np.zeros((Y_pred.size, Y_pred.max() + 1))
+    # Y_pred_1h[np.arange(Y_pred.size), Y_pred] = 1
+    # np.save(output_path + 'Y_pred_N{}.txt'.format(n), Y_pred_1h)
+    #
+    #
+    # rec = np.linalg.norm(X_test - signatures @ exposureTest, ord='fro')
+    # rec2 = np.linalg.norm(X_test - signatures @ exposureTest)
+    # return acc , f1 , rec
 
     pass

@@ -10,8 +10,8 @@ import numpy as np
 def main():
     # data = sig.importdata("text")
 
-    min_sig = 7
-    max_sig = 7
+    min_sig = 5
+    max_sig = 5
     reps = 10
     lr = 5e-3
 
@@ -47,12 +47,12 @@ def main():
 
             for c_idx, lambda_c in enumerate(l_c):
                 for p_idx, lambda_p in enumerate(l_p):
-                    output_path = 'CV/final_test_new/K{}_c{}_p{}_reps{}_f{}'.format(k, c_idx, p_idx, reps, fold)
+                    output_path = 'CV/final_test_temp/K{}_c{}_p{}_reps{}_f{}'.format(k, c_idx, p_idx, reps, fold)
                     # output_path = 'CV/temp/K{}_c{}_p{}_reps{}_f{}'.format(k, c_idx, p_idx, reps, fold)
 
                     # TRAINING
                     # seeds = seed_path,
-                    results[c_idx, p_idx, :25] = sig.sigProfilerExtractor("text", output_path, train_data, train_label, minimum_signatures=k, maximum_signatures=k, seeds = seed_path, nmf_replicates=reps, lambda_c= lambda_c, lr= lr, lambda_p= lambda_p, make_decomposition_plots=False)
+                    # results[c_idx, p_idx, :25] = sig.sigProfilerExtractor("text", output_path, train_data, train_label, minimum_signatures=k, maximum_signatures=k, seeds = seed_path, nmf_replicates=reps, lambda_c= lambda_c, lr= lr, lambda_p= lambda_p, make_decomposition_plots=False)
 
                 # TEST / VALIDATION
                     # UNFILTERED
@@ -68,7 +68,7 @@ def main():
 
 
                     # f = 'SNMF_final_test_.txt'
-                    f = 'CV/final_test_new/SNMF_k{}_f{}.txt'.format(k,fold)
+                    f = 'CV/final_test_temp/SNMF_k{}_f{}.txt'.format(k,fold)
                     # f = 'CV/temp/SNMF_k{}_f{}.txt'.format(k,fold)
 
 

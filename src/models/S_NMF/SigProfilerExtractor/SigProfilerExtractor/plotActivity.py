@@ -98,7 +98,7 @@ artifacts_sigs = pd.DataFrame(np.array([['SBS27', '#C8C8C8'],
 # with open('additional_colors.txt', 'r') as f: colors = f.read().splitlines()
 ##########################################
 #function to plot Sample Activities
-def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False):
+def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False, lambda_c=0):
 
     inputDF = pd.read_table(activity_file,index_col = 0)
     inputDF = inputDF.loc[:, (inputDF != 0).any(axis = 0)]
@@ -126,6 +126,8 @@ def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_siz
             rand_color = "#%06x" % random.randint(0, 0xFFFFFF)
             rand_colors_list += [rand_color]
         color_list = color_code[color_code['signature'].isin(all_sig)]["color"].tolist() + colors[:len(s2)] + rand_colors_list + artifacts_sigs[artifacts_sigs['signature'].isin(all_sig)]["color"].tolist()
+
+# REORDER??
 
 #Start plotting    
     pp = PdfPages(output_file)
@@ -172,7 +174,7 @@ def plotActivity(activity_file, output_file = "Activity_in_samples.pdf", bin_siz
     pp.close()
 
 
-def plotActivity_real(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False):
+def plotActivity_real(activity_file, output_file = "Activity_in_samples.pdf", bin_size = 50, log = False, lambda_c = 0):
 
     inputDF = pd.read_table(activity_file,index_col = 0)
     inputDF = inputDF.loc[:, (inputDF != 0).any(axis = 0)]
@@ -212,7 +214,18 @@ def plotActivity_real(activity_file, output_file = "Activity_in_samples.pdf", bi
 
     #TODO: reorder
     # list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96E", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96C", "SBS96F": "SBS96F", "SBS96G": "SBS96G"})
-    list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96C", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96E", "SBS96F": "SBS96G", "SBS96G": "SBS96F"})
+    # list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96C", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96E", "SBS96F": "SBS96G", "SBS96G": "SBS96F"})
+
+    # list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96A","SBS96B": "SBS96C", "SBS96C": "SBS96D","SBS96D": "SBS96B", "SBS96E": "SBS96E", "SBS96F": "SBS96G", "SBS96G": "SBS96F"})
+
+    # if lambda_c == 0:
+    #     list_of_dfs[0] = list_of_dfs[0].rename(columns={"SBS96A": "SBS96E",
+    #                                                     "SBS96B": "SBS96A",
+    #                                                     "SBS96C": "SBS96B",
+    #                                                     "SBS96D": "SBS96D",
+    #                                                     "SBS96E": "SBS96C"})
+
+
 
     # list_of_dfs[0] = list_of_dfs[0].reorder
     for j in range(0,len(list_of_dfs)):
