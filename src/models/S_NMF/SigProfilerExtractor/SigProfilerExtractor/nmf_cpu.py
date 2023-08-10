@@ -155,13 +155,13 @@ class NMF:
     @property
     def W(self):
         # Signatures
-        # S -> (N, 96)
+        # S -> (96, K)
         return self._W
 
     @property
     def H(self):
         # Exposure
-        # E -> (N, K)
+        # E -> (K, N)
         return self._H
 
     @property
