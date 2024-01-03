@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="29e847be-275c-4d27-8ae5-d37916716ee0" name="Changes" comment="clean code">
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/msc-thesis-2122-sandergoossens.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/.travis.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/LICENSE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/MANIFEST.in" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/PlotDecomposition.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/PlotDecomposition_SBS96.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/SigProfilerPlottingMatrix.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/21_breast_WGS_substitutions.mat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Accolade_fermante.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/CNV_features.tsv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/CNV_signatures.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/CN_classes_dictionary.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/DBS_signatures_genome_builds.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v1_SBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v2_SBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.1_DBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.1_ID_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.1_SBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.2_DBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.2_ID_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.2_SBS288_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3.2_SBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3_DBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3_ID_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh37/COSMIC_v3_SBS_GRCh37.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v1_SBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v2_SBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3.1_DBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3.1_SBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3.2_DBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3.2_SBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3_DBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/GRCh38/COSMIC_v3_SBS_GRCh38.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v1_SBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v2_SBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3.1_DBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3.1_SBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3.2_DBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3.2_SBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3_DBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm10/COSMIC_v3_SBS_mm10.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v1_SBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v2_SBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3.1_DBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3.1_SBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3.2_DBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3.2_SBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3_DBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/mm9/COSMIC_v3_SBS_mm9.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v1_SBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v2_SBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3.1_DBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3.1_SBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3.2_DBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3.2_SBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3_DBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Reference_Signatures/rn6/COSMIC_v3_SBS_rn6.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/SBS_signatures_genome_builds.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/Samples.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/csvexample.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/sigProfiler_DBS_signatures.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/sigProfiler_ID_signatures.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/sigProfiler_SBS_signatures_2018_03_28.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD3851a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD3890a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD3904a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD3905a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD3945a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4005a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4006a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4085a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4086a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4088a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4103a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4107a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4109a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4115a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4116a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4120a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4192a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4194a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4198a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4199a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/data/vcftest/PD4248a.vcf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/decomposition.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/nmf_cpu.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/nmf_gpu.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/plotActivity.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/sigpro.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/single_sample.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/Accolade_fermante.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/COSMIC_refit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/CREDIT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/CV/Seeds.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/CV/Seeds_3.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/Fonts/Arial Bold.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.DBS1248.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.DBS186.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.DBS2976.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.DBS78.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.ID28.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.ID415.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.ID83.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS1536.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS24.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS384.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS6.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS6144.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/FormatFiles/Sample_Files.SBS96.all" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/JOB_METADATA.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Activities/SBS96_S5_NMF_Activities.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Activities/SBS96_S5_NMF_Activities_SEM_Error.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Activities/SBS96_S5_NMF_Activity_Plots.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Signatures/SBS96_S5_Signatures.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Signatures/SBS96_S5_Signatures_SEM_Error.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Signatures/Signature_plotSBS_96_plots_S5.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Solution_Stats/SBS96_S5_NMF_Convergence_Information.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Solution_Stats/SBS96_S5_Samples_stats.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_5_Signatures/Solution_Stats/SBS96_S5_Signatures_stats.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Activities/SBS96_S6_NMF_Activities.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Activities/SBS96_S6_NMF_Activities_SEM_Error.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Activities/SBS96_S6_NMF_Activity_Plots.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Signatures/SBS96_S6_Signatures.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Signatures/SBS96_S6_Signatures_SEM_Error.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Signatures/Signature_plotSBS_96_plots_S6.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Solution_Stats/SBS96_S6_NMF_Convergence_Information.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Solution_Stats/SBS96_S6_Samples_stats.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_Solutions/SBS96_6_Signatures/Solution_Stats/SBS96_S6_Signatures_stats.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/All_solutions_stat.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/SBS96_selection_plot.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Samples.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Activities/COSMIC_SBS96_Activities_refit.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Activities/COSMIC_SBS96_Activity_Plots_refit.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Activities/Decomposed_Mutation_Probabilities.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/De_Novo_map_to_COSMIC_SBS96.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/SBS96_Decomposition_Plots.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Signatures/COSMIC_SBS96_Signatures.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Signatures/SBS_96_plots_COSMIC_SBS96.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Solution_Stats/COSMIC_SBS96_Samples_Stats_refit.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Solution_Stats/COSMIC_SBS96_Signature_Assignment_log.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Solution_Stats/COSMIC_SBS96_refit_Signature_Assignment_log.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Solution_Stats/Cosmic_SBS96_Decomposition_Log.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Activities/De_Novo_Mutation_Probabilities_refit.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Activities/SBS96_De-Novo_Activities_refit.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Activities/SBS96_De-Novo_Activity_Plots_refit.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/SBS96_De-Novo_Signatures.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/SBS96_De-Novo_Signatures_SEM_Error.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Signatures/SBS_96_plots_SBS96_De-Novo.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Solution_Stats/SBS96_De-Novo_Samples_Stats_refit.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Solution_Stats/SBS96_De-Novo_Signatures_Stats.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/SBS96/Suggested_Solution/SBS96_De-Novo_Solution/Solution_Stats/SBS96_De-Novo_refit_Signature_Assignment_log.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/example_output/Seeds.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/plot_TEMP.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/test.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/test_NMF.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/test_TCGA.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/src/test_volkova.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/subroutines.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/SigProfilerExtractor/version.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SNMF/setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/bootstrapped_sameSplit/N_50/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/bootstrapped_sameSplit/N_50/Untitled.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/EDA/.ipynb_checkpoints/Bootstrapping-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/EDA/.ipynb_checkpoints/EDA_new-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/EDA/.ipynb_checkpoints/LOAD_ZOU-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/EDA/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/processing/.ipynb_checkpoints/main-checkpoint.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2LmfrE1pYMPq508ze5KNFsJEKjG" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "file.status.colors",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="test_TCGA" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="msc-thesis-2122-sandergoossens" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/models/S_NMF/SigProfilerExtractor/SigProfilerExtractor/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/models/S_NMF/SigProfilerExtractor/SigProfilerExtractor/src/test_TCGA.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.test_TCGA" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="29e847be-275c-4d27-8ae5-d37916716ee0" name="Changes" comment="" />
+      <created>1676481374421</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1676481374421</updated>
+      <workItem from="1676481391132" duration="2889000" />
+      <workItem from="1677675486420" duration="3612000" />
+      <workItem from="1684145306554" duration="5792000" />
+      <workItem from="1685531942598" duration="312000" />
+      <workItem from="1685532300321" duration="3739000" />
+      <workItem from="1685712498383" duration="2501000" />
+      <workItem from="1686578572046" duration="1146000" />
+      <workItem from="1686905252737" duration="1940000" />
+      <workItem from="1691660418928" duration="1352000" />
+      <workItem from="1692271272479" duration="3204000" />
+      <workItem from="1694342837553" duration="662000" />
+      <workItem from="1701693071546" duration="1864000" />
+      <workItem from="1704271692298" duration="9254000" />
+    </task>
+    <task id="LOCAL-00001" summary="tom changes">
+      <created>1691660570431</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1691660570431</updated>
+    </task>
+    <task id="LOCAL-00002" summary="clean code">
+      <created>1704290126608</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1704290126608</updated>
+    </task>
+    <task id="LOCAL-00003" summary="clean code">
+      <created>1704296222954</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1704296222954</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="github/main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="tom changes" />
+    <MESSAGE value="clean code" />
+    <option name="LAST_COMMIT_MESSAGE" value="clean code" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/msc_thesis_2122_sandergoossens$test_TCGA.coverage" NAME="test_TCGA Coverage Results" MODIFIED="1676482300980" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/models/S_NMF/SigProfilerExtractor/SigProfilerExtractor/src" />
+  </component>
+</project>
